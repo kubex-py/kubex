@@ -1,25 +1,15 @@
 # Trusted Publisher Configuration (Test PyPI)
 #
-# For this workflow to publish via OIDC trusted publishing, each package must
-# have a trusted publisher configured in its Test PyPI project settings at:
-#   https://test.pypi.org/manage/project/<package-name>/settings/publishing/
-#
-# Configure the following trusted publisher for EACH of the 9 packages:
-#   - kubex
-#   - kubex-core
-#   - kubex-k8s-1-32
-#   - kubex-k8s-1-33
-#   - kubex-k8s-1-34
-#   - kubex-k8s-1-35
-#   - kubex-k8s-1-36
-#   - kubex-k8s-1-37
-#   - kubex-k8s-1-38
-#
-# Trusted publisher settings (same for all packages):
+# Publishes a .dev build of kubex for every pull request from this repository.
+# The kubex project on Test PyPI needs this trusted publisher, at
+#   https://test.pypi.org/manage/project/kubex/settings/publishing/:
 #   Owner:         kubex-py
 #   Repository:    kubex
 #   Workflow name: publish-test.yaml
 #   Environment:   test-pypi
+#
+# kubex-core and the kubex-k8s-* model packages are published from their own
+# repositories (kubex-py/kubex-core, kubex-py/k8s-1.NN).
 
 name: Publish to Test PyPI
 
@@ -27,82 +17,16 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    # Pull requests from forks get no OIDC token, so they can't publish.
     if: github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    outputs:
-      dev-version: ${{ steps.version.outputs.dev-version }}
-      core-dev-version: ${{ steps.version.outputs.core-dev-version }}
-      k8s-versions: ${{ steps.version.outputs.k8s-versions }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-
-      - name: Append dev version suffix
-        id: version
-        run: |
-          DEV_SUFFIX=".dev${{ github.run_number }}${{ github.run_attempt }}"
-
-          # Extract base version before modification
-          BASE_VERSION=$(sed -n 's/^VERSION = "\(.*\)"/\1/p' kubex/__version__.py)
-          # Normalize PEP 440 version for PyPI URLs (e.g., 0.1.0-alpha.1.dev3 → 0.1.0a1.dev3)
-          DEV_VERSION=$(python3 -c "from packaging.version import Version; print(Version('${BASE_VERSION}${DEV_SUFFIX}'))")
-          echo "dev-version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
-
-          # kubex root package (dynamic version from __version__.py)
-          sed -i "s/^VERSION = \"\(.*\)\"/VERSION = \"\1${DEV_SUFFIX}\"/" kubex/__version__.py
-
-          # Workspace packages (version in pyproject.toml)
-          for pkg in packages/*/; do
-            sed -i "s/^version = \"\(.*\)\"/version = \"\1${DEV_SUFFIX}\"/" "${pkg}pyproject.toml"
-          done
-
-          # Pin workspace dependencies to exact dev versions so Test PyPI
-          # installs form a coherent set from the same PR build.
-          # Each dependency is pinned to its own actual version (not the root
-          # kubex version), because workspace packages may carry a different
-          # version string during development.
-          CORE_DEV_VERSION_RAW="$(sed -n 's/^version = "\(.*\)"/\1/p' packages/kubex-core/pyproject.toml)"
-          CORE_DEV_VERSION=$(python3 -c "from packaging.version import Version; print(Version('${CORE_DEV_VERSION_RAW}'))")
-          echo "core-dev-version=${CORE_DEV_VERSION}" >> "$GITHUB_OUTPUT"
-          # Matches the requirement with or without a version specifier
-          # (e.g. "kubex-core==0.1.0-beta.3" or "kubex-core>=0.1.0b4,<0.2").
-          sed -i "s/\"kubex-core[^\"]*\"/\"kubex-core==${CORE_DEV_VERSION}\"/" pyproject.toml
-          K8S_VERSIONS_JSON='{'
-          FIRST=true
-          for pkg in packages/kubex-k8s-*/; do
-            K8S_DEV_VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' "${pkg}pyproject.toml")"
-            K8S_NORMALIZED=$(python3 -c "from packaging.version import Version; print(Version('${K8S_DEV_VERSION}'))")
-            pkg_name=$(basename "$pkg")
-            sed -i "s/\"${pkg_name}\"/\"${pkg_name}==${K8S_NORMALIZED}\"/" pyproject.toml
-            sed -i "s/\"kubex-core[^\"]*\"/\"kubex-core==${CORE_DEV_VERSION}\"/" "${pkg}pyproject.toml"
-            if [ "$FIRST" = true ]; then
-              FIRST=false
-            else
-              K8S_VERSIONS_JSON="${K8S_VERSIONS_JSON},"
-            fi
-            K8S_VERSIONS_JSON="${K8S_VERSIONS_JSON}\"${pkg_name}\":\"${K8S_NORMALIZED}\""
-          done
-          K8S_VERSIONS_JSON="${K8S_VERSIONS_JSON}}"
-          echo "k8s-versions=${K8S_VERSIONS_JSON}" >> "$GITHUB_OUTPUT"
-
-      - name: Build packages
-        run: |
-          # Build in dependency order: kubex-core first, then k8s packages, then kubex
-          uv build packages/kubex-core --out-dir dist/
-          for pkg in packages/kubex-k8s-*/; do
-            uv build "$pkg" --out-dir dist/
-          done
-          uv build --out-dir dist/
-
-      - name: List built distributions
-        run: ls -la dist/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
+    uses: kubex-py/.github/.github/workflows/python-build.yml@main
+    with:
+      dev-version-file: kubex/__version__.py
 
   gate:
     needs: build
@@ -164,7 +88,7 @@ jobs:
             }
 
   publish:
-    needs: gate
+    needs: [build, gate]
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     environment: test-pypi
@@ -172,7 +96,7 @@ jobs:
       id-token: write
       attestations: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -181,42 +105,27 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
           attestations: true
-          skip-existing: true
 
   comment:
-    needs: [publish, build]
+    needs: [build, publish]
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
     steps:
       - uses: actions/github-script@v7
         env:
-          DEV_VERSION: ${{ needs.build.outputs.dev-version }}
-          CORE_DEV_VERSION: ${{ needs.build.outputs.core-dev-version }}
-          K8S_VERSIONS: ${{ needs.build.outputs.k8s-versions }}
+          DEV_VERSION: ${{ needs.build.outputs.version }}
         with:
           script: |
-            const devVersion = process.env.DEV_VERSION;
-            const coreDevVersion = process.env.CORE_DEV_VERSION;
-            const k8sVersions = JSON.parse(process.env.K8S_VERSIONS);
-            const packages = [
-              { name: 'kubex', version: devVersion },
-              { name: 'kubex-core', version: coreDevVersion },
-              ...Object.entries(k8sVersions).map(([name, version]) => ({ name, version })),
-            ];
-            const lines = packages.map(({ name, version }) =>
-              `- [${name} ${version}](https://test.pypi.org/project/${name}/${version}/)`
-            );
+            const version = process.env.DEV_VERSION;
             const body = [
-              '## Test PyPI packages published',
+              '## Test PyPI package published',
               '',
-              'The following packages have been published to Test PyPI:',
-              '',
-              ...lines,
+              `[kubex ${version}](https://test.pypi.org/project/kubex/${version}/)`,
               '',
               'Install with:',
               '```',
-              `pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ kubex==${devVersion}`,
+              `pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ kubex==${version}`,
               '```',
             ].join('\n');
 

@@ -32,9 +32,6 @@ uv run ruff check --fix . && uv run ruff format .
 # Type check (strict mode)
 uv run mypy .
 
-# Type check kubex-core (the root run excludes packages/ and never reports its errors)
-uv run --directory packages/kubex-core mypy kubex_core
-
 # Run pre-commit hooks
 pre-commit run --all-files
 
@@ -43,16 +40,13 @@ mise run docs:serve
 
 # Build docs in strict mode (--strict turns warnings into errors)
 mise run docs:build
-
-# Regenerate all K8s model packages (downloads specs + runs codegen + verifies)
-mise run regenerate-models
 ```
 
 ## Repository Structure
 
 ```
 kubex/                          # Main package — PEP 420 namespace package (no __init__.py) so the
-                                #   workspace `kubex-k8s-*` packages can contribute `kubex.k8s.*` submodules.
+                                #   separately installed `kubex-k8s-*` packages can contribute `kubex.k8s.*` submodules.
                                 #   Public API is imported from explicit submodules:
                                 #   `from kubex.api import Api, create_api`,
                                 #   `from kubex.client import BaseClient, create_client, ClientOptions`,
@@ -126,48 +120,9 @@ kubex/                          # Main package — PEP 420 namespace package (no
         ├── attach.py           # Attach WebSocket upgrade request building (mirrors exec.py, no command= params)
         └── portforward.py      # Portforward WebSocket upgrade request building (repeated ports= query params)
 
-packages/                       # Workspace packages
-├── kubex-core/                 # Shared base models and types (kubex_core)
-│   └── kubex_core/models/
-│       ├── base.py             # BaseK8sModel — Pydantic base with camelCase alias, extra="allow" (unknown fields round-trip)
-│       ├── types.py            # Time, MicroTime (wire formats), Quantity (accepts numbers), NullAsEmptyList/Dict
-│       ├── base_entity.py      # BaseEntity — base for all K8s resources (__RESOURCE_CONFIG__)
-│       ├── interfaces.py       # Marker classes: ClusterScopedEntity, NamespaceScopedEntity, HasLogs, Evictable, HasEphemeralContainers, HasResize, etc.
-│       ├── resource_config.py  # ResourceConfig[T] descriptor — kind, version, scope, URL generation
-│       ├── metadata.py         # ObjectMetadata, ListMetadata, OwnerReference, ManagedFieldsEntry, ShardInfo
-│                               #   (hand-written overrides; codegen's validate_overrides fails on drift from the spec)
-│       ├── typing.py           # ResourceType TypeVar
-│       ├── list_entity.py      # ListEntity[ResourceType] wrapper
-│       ├── status.py           # Status response model
-│       ├── scale.py            # Scale subresource model
-│       ├── eviction.py         # Eviction subresource model (policy/v1)
-│       ├── admission.py        # AdmissionReview/AdmissionRequest/AdmissionResponse (admission.k8s.io/v1, hand-written: not in the
-│                               #   OpenAPI spec); review and request generic over request.object; allow()/deny() copy the uid; patch is bytes
-│                               #   (base64 on the wire), an empty allow(patch=) sends none
-│       └── partial_object_meta.py # Partial metadata variant
-└── kubex-k8s-{1-32..1-38}/     # Generated Kubernetes resource models (one package per K8s version)
-    └── kubex/k8s/v1_NN/        # ~666 generated model files across ~30 API groups
-        ├── core/v1/            # Pod, Namespace, Service, ConfigMap, Secret, etc.
-        ├── apps/v1/            # Deployment, StatefulSet, DaemonSet, ReplicaSet
-        ├── batch/v1/           # Job, CronJob
-        ├── networking/v1/      # Ingress, NetworkPolicy
-        ├── rbac/v1/            # Role, ClusterRole, RoleBinding, ClusterRoleBinding
-        └── ...                 # All other API groups for that K8s version
-
-scripts/codegen/                # OpenAPI → Pydantic v2 code generator
-├── __main__.py                 # Typer CLI: generate, verify, regenerate commands
-├── spec_loader.py              # OpenAPI/Swagger JSON parsing
-├── fetch_specs.py              # GitHub API client for resolving K8s releases and downloading OpenAPI specs
-├── resource_detector.py        # Identifies K8s resources from spec
-├── type_mapper.py              # OpenAPI type → Python type mapping
-├── model_emitter.py            # Generates Pydantic model code
-├── enum_emitter.py             # Generates enum definitions
-├── ir.py                       # Intermediate representation of models
-├── naming.py                   # Python naming conventions
-├── package_builder.py          # Writes generated package to disk
-├── ref_resolver.py             # Resolves $ref links in OpenAPI spec
-├── templates/                  # Jinja2 templates for code generation
-└── tests/                      # Codegen tests: golden snapshots, resource detection, spec fetching, regenerate CLI
+# Not in this repository: kubex-core (`kubex_core`, kubex-py/kubex-core), the generated
+# kubex-k8s-1-NN model packages (`kubex.k8s.v1_NN`, kubex-py/k8s-1.32 … k8s-1.38) and their
+# generator (kubex-py/kubex-codegen). kubex installs them from PyPI.
 
 test/                           # Test suite
 ├── e2e/                        # End-to-end tests (testcontainers + K3S)
@@ -271,16 +226,16 @@ lychee.toml                     # Link checker configuration
 
 ## Build System & Dependencies
 
-- **Package manager**: [uv](https://github.com/astral-sh/uv) with workspace support
+- **Package manager**: [uv](https://github.com/astral-sh/uv)
 - **Build backend**: hatchling
 - **Python**: 3.11, 3.12, 3.13, 3.14, 3.15, and the free-threaded 3.14t and 3.15t builds
-- **Workspace members**: `packages/*` (kubex-core, kubex-k8s-1-32 through kubex-k8s-1-38)
-- **Core deps**: `pydantic>=2.0,<3`, `pyyaml>=6.0.2`, `kubex-core` (workspace), `anyio>=4.6.0`
+- **Core deps**: `pydantic>=2.0,<3`, `pyyaml>=6.0.2`, `kubex-core>=0.1.0b6,<0.2` (from PyPI; its own versions), `anyio>=4.6.0`
 - **Optional deps** (install via `--all-extras` or individually):
   - `httpx>=0.27.2` — primary HTTP client
   - `httpx-ws>=0.7` — WebSocket support for the httpx client (required for `exec` and `attach`); install via the dedicated `httpx-ws` extra (`kubex[httpx-ws]`), which also pulls in `httpx`. The plain `httpx` extra deliberately omits it so non-WebSocket installs stay slim.
   - `aiohttp>=3.11.2` — alternative HTTP client (built-in WebSocket support via `ws_connect`); the `aiohttp` extra also declares `multidict>=4.5`, which `kubex/client/aiohttp.py` imports directly
-- **Dev deps** include `kubex-k8s-1-35` (workspace, used for tests), `jinja2`, `typer` (for codegen), testing/linting tools
+- **Model extras**: `k8s-1.32` … `k8s-1.38` install the `kubex-k8s-1-NN` packages from PyPI
+- **Dev deps** include `kubex-k8s-1-35` (from PyPI, used for tests) and testing/linting tools
 - **Version** is stored in `kubex/__version__.py` and referenced from `pyproject.toml` via hatch
 
 ## Code Quality Tools
@@ -363,7 +318,6 @@ Resources declare capabilities via multiple inheritance from marker classes: `Na
 - **Framework**: pytest with `pytest-cov` and `anyio` for async support
 - **E2E tests** use `testcontainers` with a K3S container (requires Docker); located in `test/e2e/`
 - **Unit tests** for request builder methods in `test/test_request_builder/`, error handling in `test/test_error_handling.py`, metadata accessor in `test/test_metadata_accessor.py`, configuration/auth in `test/test_configuration/`, timeout settings in `test/test_timeout/`, patch models in `test/test_patch/`, subresource descriptors in `test/test_subresource_descriptors/`, `ClientOptions` and `create_client()` in `test/test_client/`
-- **Codegen tests** with golden snapshots in `scripts/codegen/tests/`
 - E2E tests are parameterized over both HTTP clients (`httpx`, `aiohttp`) and async backends (`asyncio`, `trio` — trio only with httpx)
 - Mark async tests with `@pytest.mark.anyio`
 - The `conftest.py` provides session-scoped K3S cluster, per-test client fixtures, and a temporary namespace fixture that creates/cleans up namespaces
@@ -378,8 +332,6 @@ Five GitHub Actions workflows:
 2. `ruff check .`
 3. `ruff format --check .`
 4. `mypy .` (strict, with all extras installed)
-5. `mypy kubex_core` from `packages/kubex-core` (its own `[tool.mypy]`; the root run excludes `packages/` and never reports errors in kubex-core)
-6. Verify generated packages — runs `python -m scripts.codegen verify` for each `packages/kubex-k8s-*`
 
 **Test** (`test.yaml`) — runs on push and pull_request:
 1. `pytest .` with all extras, as a matrix over Python 3.11, 3.12, 3.13, 3.14, 3.14t, 3.15, 3.15t (`fail-fast: false`).
@@ -387,16 +339,14 @@ Five GitHub Actions workflows:
    `test/test_free_threading.py` (GIL stays off after importing kubex) cannot skip silently
 
 **Publish Test** (`publish-test.yaml`) — runs on pull requests to `main`:
-1. Appends `.devN` version suffix to all 9 packages
-2. Builds all packages in dependency order
-3. Publishes to Test PyPI using OIDC trusted publishing
-4. Posts a PR comment with Test PyPI links
+1. Builds kubex with a `.devN` version suffix (kubex-py/.github's reusable `python-build.yml`)
+2. Waits for the required checks, then publishes to Test PyPI using OIDC trusted publishing
+3. Posts a PR comment with the Test PyPI link
 - Uses GitHub environment `test-pypi`; skips publish for fork PRs
 
 **Publish** (`publish.yaml`) — runs on `v*` tag push:
-1. Verifies `kubex` and `kubex-core` versions match the tag (kubex-k8s-* packages are versioned independently)
-2. Builds all packages in dependency order
-3. Publishes to production PyPI using OIDC trusted publishing
+1. Builds kubex through the reusable `python-build.yml`, which fails unless the tag matches `kubex/__version__.py` and points to a commit on `main`
+2. Publishes to production PyPI using OIDC trusted publishing
 - Uses GitHub environment `pypi`
 
 **Docs** (`docs.yaml`) — runs on push to `main`, `v*` tag, and `workflow_dispatch`:
@@ -406,14 +356,18 @@ Five GitHub Actions workflows:
 
 ## Releasing
 
-To publish a new version to PyPI:
+kubex has its own version numbers; kubex-core and the model packages are released from their own
+repositories. To publish a new kubex version to PyPI:
 
-1. Bump the version in `kubex/__version__.py`, in `packages/kubex-core/pyproject.toml`, and in the exact `kubex-core==<VERSION>` pin in the root `pyproject.toml` — all three must match the git tag (kubex and kubex-core ship in lock-step). The `packages/kubex-k8s-*/pyproject.toml` versions are independent (they track Kubernetes minor releases) and only need to be bumped when the corresponding generated package actually changes; they depend on a `kubex-core` range (`>=…,<0.2`, set in `scripts/codegen/templates/pyproject.toml.j2`) — raise its lower bound when generated code starts relying on a newer kubex-core. `regenerate`/`generate` keep each package's existing version unless `--package-version` is passed.
-2. Commit and push to `main`
-3. Create and push a git tag matching the `kubex` / `kubex-core` version: `git tag v<VERSION> && git push origin v<VERSION>`
-4. The `publish.yaml` workflow will verify that the `kubex` and `kubex-core` versions and the `kubex-core` pin match the tag, build all packages, and publish to production PyPI
+1. Bump `VERSION` in `kubex/__version__.py` and move the `CHANGELOG.md` notes from "Unreleased" under
+   the new version. If kubex starts relying on a newer kubex-core, raise the lower bound of the
+   `kubex-core>=…,<0.2` dependency in `pyproject.toml`.
+2. Merge to `main`.
+3. Push a signed tag matching the version: `git tag -s v<VERSION> -m "Release <VERSION>" && git push origin v<VERSION>`
+4. `publish.yaml` checks the tag against the version and `main`, builds kubex and publishes it to PyPI.
 
-Both publish workflows use PyPI OIDC trusted publishing — no API tokens are stored in the repository. Each of the 9 packages must have a trusted publisher configured in its PyPI (and Test PyPI) project settings. See the comment block at the top of each workflow file for the exact configuration values.
+Both publish workflows use PyPI OIDC trusted publishing — no API tokens are stored in the repository.
+The trusted-publisher settings are in the comment block at the top of each workflow file.
 
 ## Coding Conventions
 
@@ -428,40 +382,18 @@ Both publish workflows use PyPI OIDC trusted publishing — no API tokens are st
 - **Protocols** used for structural typing (e.g., `Patch` protocol in `core/patch.py`)
 - **No synchronous API** — all client operations are async
 
-## Code Generation
+## Kubernetes models
 
-Kubernetes resource models are generated from the official OpenAPI spec using a built-in code generator at `scripts/codegen/`. Generated packages live under `packages/` (e.g., `kubex-k8s-1-32`).
-
-```bash
-# Generate models for a Kubernetes version (requires a local swagger.json)
-uv run python -m scripts.codegen generate --swagger <path-to-swagger.json> --k8s-version 1.35
-
-# Verify generated package passes mypy
-uv run python -m scripts.codegen verify packages/kubex-k8s-1-35
-```
-
-Generated models are fully typed with proper spec/status fields (not generic dicts), inherit from `kubex-core` base classes, and include marker interfaces (`HasStatusSubresource`, `HasLogs`, etc.) based on the resource's API capabilities. They are importable as:
+The resource models are generated from the Kubernetes OpenAPI spec by
+[kubex-codegen](https://github.com/kubex-py/kubex-codegen), one repository per Kubernetes version
+(`kubex-py/k8s-1.NN`, published as `kubex-k8s-1-NN`). Each version repository regenerates itself (its
+Regenerate workflow, pinned to a kubex-codegen release); none of that happens here. They are
+importable as:
 ```python
 from kubex.k8s.v1_35.core.v1.pod import Pod
 from kubex.k8s.v1_35.core.v1.namespace import Namespace
 from kubex.k8s.v1_35.apps.v1.deployment import Deployment
 ```
 
-### Regenerating all model packages
-
-Use `mise run regenerate-models` to automatically resolve the latest patch/pre-release tag for each configured Kubernetes minor version, download both v2 and v3 OpenAPI specs from the Kubernetes GitHub repo, regenerate all `kubex-k8s-*` packages, and verify them with mypy. Downloaded specs are cached in `.cache/schemas/<tag>/` and reused on subsequent runs. The list of minor versions is configured via `K8S_VERSIONS` in `mise.toml`.
-
-```bash
-# Regenerate all packages (uses versions from mise.toml)
-mise run regenerate-models
-
-# Or invoke the CLI directly with custom versions
-uv run python -m scripts.codegen regenerate --versions 1.35,1.36
-```
-
-### Adding support for a new Kubernetes version
-
-1. Run the codegen: `uv run python -m scripts.codegen generate --swagger <path-to-swagger.json> --k8s-version <VERSION>`
-2. Add `kubex-k8s-<VERSION> = { workspace = true }` to `[tool.uv.sources]` in `pyproject.toml`
-3. Add `"k8s-<VERSION>" = ["kubex-k8s-<VERSION>"]` to `[project.optional-dependencies]` in `pyproject.toml`
-4. Verify with `uv run python -m scripts.codegen verify packages/kubex-k8s-<VERSION>`
+To support a new Kubernetes version in kubex, add its extra to `[project.optional-dependencies]` in
+`pyproject.toml` (`"k8s-1.NN" = ["kubex-k8s-1-NN"]`) once the package is on PyPI.

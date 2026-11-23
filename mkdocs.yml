@@ -40,7 +40,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [".", "packages/kubex-core"]
+          paths: ["."]
           options:
             show_signature_annotations: true
             separate_signature: true

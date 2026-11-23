@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`admission.k8s.io/v1`) for admission webhooks. `AdmissionReview` and `AdmissionRequest` are
   generic over the request's object type; `AdmissionRequest.allow()`/`deny()` build the response.
 
+### Changed
+
+- kubex depends on `kubex-core>=0.1.0b6,<0.2` instead of pinning the same release: kubex-core has
+  its own version numbers now.
+- kubex-core, the `kubex-k8s-1-NN` model packages and their generator moved to their own
+  repositories ([kubex-py/kubex-core](https://github.com/kubex-py/kubex-core),
+  [kubex-py/k8s-1.32](https://github.com/kubex-py/k8s-1.32) … `k8s-1.38`,
+  [kubex-py/kubex-codegen](https://github.com/kubex-py/kubex-codegen)). The `k8s-1.NN` extras
+  install the model packages from PyPI as before.
+
 ## [0.1.0-beta.5] - 2026-11-17
 
 ### Added

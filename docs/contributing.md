@@ -135,28 +135,9 @@ git add CNAME && git commit -m "set custom domain" && git push
 git checkout -
 ```
 
-## Maintainer: regenerating K8s models
+## Kubernetes models
 
-!!! note "Maintainer-only"
-    This section is relevant only when updating or adding Kubernetes API version support. It is not needed for normal documentation contributions.
-
-Kubernetes resource models under `packages/kubex-k8s-*/` are generated from the official OpenAPI spec. To regenerate:
-
-```bash
-# Regenerate all configured K8s versions (downloads specs, runs codegen, verifies with mypy)
-mise run regenerate-models
-```
-
-The list of minor versions is configured via `K8S_VERSIONS` in `mise.toml`. Downloaded specs are cached in `.cache/schemas/<tag>/`.
-
-To regenerate a single version manually:
-
-```bash
-# Generate from a local swagger.json
-uv run python -m scripts.codegen generate --swagger path/to/swagger.json --k8s-version 1.36
-
-# Verify the generated package type-checks
-uv run python -m scripts.codegen verify packages/kubex-k8s-1-36
-```
-
-After adding a new K8s version, update `pyproject.toml` to add it to `[tool.uv.sources]` and `[project.optional-dependencies]` — see `CLAUDE.md` for the full checklist.
+The `kubex.k8s.v1_NN` resource models are not in this repository. Each Kubernetes version has its own
+repository, [kubex-py/k8s-1.NN](https://github.com/kubex-py) (published as `kubex-k8s-1-NN`), and the
+models are generated there by [kubex-codegen](https://github.com/kubex-py/kubex-codegen). Changes to
+the models go to kubex-codegen; see its README for regenerating a version.
