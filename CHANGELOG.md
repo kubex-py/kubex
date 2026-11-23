@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta.6] - 2026-11-24
+
 ### Added
 
 - `kubex_core.models.admission`: `AdmissionReview`, `AdmissionRequest` and `AdmissionResponse`
@@ -15,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The project moved to the [kubex-py](https://github.com/kubex-py) organization:
+  [kubex-py/kubex](https://github.com/kubex-py/kubex). Links to the old repository redirect.
 - kubex depends on `kubex-core>=0.1.0b6,<0.2` instead of pinning the same release: kubex-core has
   its own version numbers now.
 - kubex-core, the `kubex-k8s-1-NN` model packages and their generator moved to their own
@@ -243,7 +247,8 @@ Initial public beta release.
 - OpenAPI → Pydantic v2 code generator and pre-generated workspace packages for Kubernetes 1.32–1.37.
 - MkDocs documentation site, examples, and a benchmark suite against `kubernetes-asyncio`.
 
-[unreleased]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.5...HEAD
+[unreleased]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.6...HEAD
+[0.1.0-beta.6]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.5...v0.1.0-beta.6
 [0.1.0-beta.5]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.4...v0.1.0-beta.5
 [0.1.0-beta.4]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.3...v0.1.0-beta.4
 [0.1.0-beta.3]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.2...v0.1.0-beta.3
