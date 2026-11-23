@@ -4,7 +4,7 @@
 
 <h1 align="center">Kubex</h1>
 
-[![Docs](https://github.com/codemageddon/kubex/actions/workflows/docs.yaml/badge.svg)](https://github.com/codemageddon/kubex/actions/workflows/docs.yaml)
+[![Docs](https://github.com/kubex-py/kubex/actions/workflows/docs.yaml/badge.svg)](https://github.com/kubex-py/kubex/actions/workflows/docs.yaml)
 
 **Documentation:** https://kubex.codemageddon.me/
 

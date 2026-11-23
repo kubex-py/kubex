@@ -1,8 +1,8 @@
 site_name: Kubex
 site_url: https://kubex.codemageddon.me/
 site_description: Async-first Kubernetes client library for Python.
-repo_url: https://github.com/codemageddon/kubex
-repo_name: codemageddon/kubex
+repo_url: https://github.com/kubex-py/kubex
+repo_name: kubex-py/kubex
 edit_uri: edit/main/docs/
 
 docs_dir: docs

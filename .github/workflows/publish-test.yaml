@@ -16,7 +16,7 @@
 #   - kubex-k8s-1-38
 #
 # Trusted publisher settings (same for all packages):
-#   Owner:         codemageddon
+#   Owner:         kubex-py
 #   Repository:    kubex
 #   Workflow name: publish-test.yaml
 #   Environment:   test-pypi

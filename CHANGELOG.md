@@ -233,9 +233,9 @@ Initial public beta release.
 - OpenAPI → Pydantic v2 code generator and pre-generated workspace packages for Kubernetes 1.32–1.37.
 - MkDocs documentation site, examples, and a benchmark suite against `kubernetes-asyncio`.
 
-[unreleased]: https://github.com/codemageddon/kubex/compare/v0.1.0-beta.5...HEAD
-[0.1.0-beta.5]: https://github.com/codemageddon/kubex/compare/v0.1.0-beta.4...v0.1.0-beta.5
-[0.1.0-beta.4]: https://github.com/codemageddon/kubex/compare/v0.1.0-beta.3...v0.1.0-beta.4
-[0.1.0-beta.3]: https://github.com/codemageddon/kubex/compare/v0.1.0-beta.2...v0.1.0-beta.3
-[0.1.0-beta.2]: https://github.com/codemageddon/kubex/compare/v0.1.0-beta.1...v0.1.0-beta.2
-[0.1.0-beta.1]: https://github.com/codemageddon/kubex/releases/tag/v0.1.0-beta.1
+[unreleased]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.5...HEAD
+[0.1.0-beta.5]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.4...v0.1.0-beta.5
+[0.1.0-beta.4]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.3...v0.1.0-beta.4
+[0.1.0-beta.3]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.2...v0.1.0-beta.3
+[0.1.0-beta.2]: https://github.com/kubex-py/kubex/compare/v0.1.0-beta.1...v0.1.0-beta.2
+[0.1.0-beta.1]: https://github.com/kubex-py/kubex/releases/tag/v0.1.0-beta.1
