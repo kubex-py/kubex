@@ -11,4 +11,4 @@ Auto-generated API reference for `kubex` and `kubex-core`, rendered from source 
 | [kubex-core](kubex-core.md) | base Pydantic models, marker interfaces, `ResourceConfig`, metadata, list/watch, subresource models |
 
 !!! note "Generated K8s resource models"
-    The generated resource models under `kubex.k8s.v1_*` (Pod, Deployment, Service, …) are not rendered here — there are ~666 files across 6 Kubernetes versions. See the [source on GitHub](https://github.com/kubex-py/kubex/tree/main/packages) or install `kubex[k8s-1.35]` and browse with your IDE for full type information.
+    The generated resource models under `kubex.k8s.v1_*` (Pod, Deployment, Service, …) are not rendered here — each Kubernetes version has several hundred model files. Every version has its own repository, from [kubex-py/k8s-1.32](https://github.com/kubex-py/k8s-1.32) to [kubex-py/k8s-1.38](https://github.com/kubex-py/k8s-1.38); or install `kubex[k8s-1.35]` and browse with your IDE for full type information.
