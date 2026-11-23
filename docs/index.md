@@ -7,7 +7,7 @@
 **Async-first Kubernetes client library for Python**, inspired by [kube.rs](https://kube.rs/). Built on Pydantic v2, async-runtime agnostic (asyncio and trio).
 
 [Get Started](getting-started/installation.md){ .md-button .md-button--primary }
-[GitHub](https://github.com/codemageddon/kubex){ .md-button }
+[GitHub](https://github.com/kubex-py/kubex){ .md-button }
 
 ---
 
