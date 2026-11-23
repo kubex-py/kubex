@@ -2029,10 +2029,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#maintainer-regenerating-k8s-models" class="md-nav__link">
+  <a href="#kubernetes-models" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Maintainer: regenerating K8s models
+        Kubernetes models
       
     </span>
   </a>
@@ -2179,10 +2179,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#maintainer-regenerating-k8s-models" class="md-nav__link">
+  <a href="#kubernetes-models" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Maintainer: regenerating K8s models
+        Kubernetes models
       
     </span>
   </a>
@@ -2311,24 +2311,11 @@ promote manually from your maintainer machine:</p>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>git<span class="w"> </span>add<span class="w"> </span>CNAME<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"set custom domain"</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>git<span class="w"> </span>push
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>git<span class="w"> </span>checkout<span class="w"> </span>-
 </code></pre></div>
-<h2 id="maintainer-regenerating-k8s-models">Maintainer: regenerating K8s models<a class="headerlink" href="#maintainer-regenerating-k8s-models" title="Permanent link">&para;</a></h2>
-<div class="admonition note">
-<p class="admonition-title">Maintainer-only</p>
-<p>This section is relevant only when updating or adding Kubernetes API version support. It is not needed for normal documentation contributions.</p>
-</div>
-<p>Kubernetes resource models under <code>packages/kubex-k8s-*/</code> are generated from the official OpenAPI spec. To regenerate:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Regenerate all configured K8s versions (downloads specs, runs codegen, verifies with mypy)</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>mise<span class="w"> </span>run<span class="w"> </span>regenerate-models
-</code></pre></div>
-<p>The list of minor versions is configured via <code>K8S_VERSIONS</code> in <code>mise.toml</code>. Downloaded specs are cached in <code>.cache/schemas/&lt;tag&gt;/</code>.</p>
-<p>To regenerate a single version manually:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Generate from a local swagger.json</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.codegen<span class="w"> </span>generate<span class="w"> </span>--swagger<span class="w"> </span>path/to/swagger.json<span class="w"> </span>--k8s-version<span class="w"> </span><span class="m">1</span>.36
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Verify the generated package type-checks</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>scripts.codegen<span class="w"> </span>verify<span class="w"> </span>packages/kubex-k8s-1-36
-</code></pre></div>
-<p>After adding a new K8s version, update <code>pyproject.toml</code> to add it to <code>[tool.uv.sources]</code> and <code>[project.optional-dependencies]</code> — see <code>CLAUDE.md</code> for the full checklist.</p>
+<h2 id="kubernetes-models">Kubernetes models<a class="headerlink" href="#kubernetes-models" title="Permanent link">&para;</a></h2>
+<p>The <code>kubex.k8s.v1_NN</code> resource models are not in this repository. Each Kubernetes version has its own
+repository, <a href="https://github.com/kubex-py">kubex-py/k8s-1.NN</a> (published as <code>kubex-k8s-1-NN</code>), and the
+models are generated there by <a href="https://github.com/kubex-py/kubex-codegen">kubex-codegen</a>. Changes to
+the models go to kubex-codegen; see its README for regenerating a version.</p>
 
 
 
